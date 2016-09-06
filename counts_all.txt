@@ -1,0 +1,8 @@
+ROI all
+ phase 0:
+  264118 nodes were found exactly 1 times
+  22777 nodes were found exactly 2 times
+  2163 nodes were found exactly 3 times
+  181 nodes were found exactly 4 times
+  30 nodes were found exactly 5 times
+  1 nodes were found exactly 6 times
