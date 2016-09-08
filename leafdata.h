@@ -13,8 +13,9 @@ public:
     void setRevCount();
     string consensusFwd();
     string consensusRev();
+    string superConsensus();
     vector <int> variants();
-    void callConsensus(string sequence, bool rev);
+    void callConsensus(string sequence, string rev);
     bool isTrash();
     void makeTrash();
     bool hasVariant();
@@ -25,6 +26,7 @@ private:
     int mRevCount;
     string mConsensusFwd;
     string mConsensusRev;
+    string mSuperConsensus;
     vector <int> mVariants;
     bool mIsTrash;
 };

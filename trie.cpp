@@ -17,7 +17,7 @@ Node* Trie::pRootPointer(){
     return mRootPointer;
 }
 
-void Trie::addBarcode(int ROINumber, int phase, string barcode, string sequence, string target, bool rev){
+void Trie::addBarcode(int ROINumber, int phase, string barcode, string sequence, string target, string rev){
     Node* pCurrentNode = mRootPointer;
     if (barcode.find('N') != -1){ return;}
     if ( barcode.length() == 0 ){
@@ -45,7 +45,7 @@ void Trie::addBarcode(int ROINumber, int phase, string barcode, string sequence,
             }
 	    pCurrentData->callConsensus(sequence, rev);
             pCurrentData->setCount();
-	    if (rev==true){
+	    if (rev=="rev"){
 		pCurrentData->setRevCount();
 	    }
             pCurrentNode->setLeafData(ROINumber, phase, pCurrentData);
@@ -126,7 +126,7 @@ void Trie::populateVariants(int threshold){
 			    checkVariants(currentData);
 			    vector <int> currentVariants = currentData->variants();
 			    if (currentVariants.size()<10){
-				while (!currentVariants.empty()){//************variants for each node consist of avector of ints, representing the hashes of each variant found trio*shift. of a 256 4*4*4*4 array made flat
+			while (!currentVariants.empty()){//************variants for each node consist of avector of ints, representing the hashes of each variant found trio*shift. of a 256 4*4*4*4 array made flat
 				    int currentVariant = currentVariants.back();
 				    currentVariants.pop_back();
 				    mVariants[i][j][currentVariant]++;

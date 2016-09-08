@@ -26,46 +26,57 @@ string LeafData::consensusFwd(){
 string LeafData::consensusRev(){
     return mConsensusRev;
 }
+string LeafData::superConsensus(){
+    return mSuperConsensus;
+}
+
 vector <int> LeafData::variants(){
     return mVariants;
 }
 
 //this is still a little icky...
-void LeafData::callConsensus(string currentSequence, bool rev=false){//check substitutions found in this read against those from other reads of this barcode. Non-matches are listed as unconfirmed
-
-	
-    if (rev==true){
-	if (mRevCount>0){
-	    if (mConsensusRev.length()!=currentSequence.length()){//if there's an indel, ignore it and trash
+void LeafData::callConsensus(string currentSequence, string rev="fwd"){//check substitutions found in this read against those from other reads of this barcode. Non-matches are listed as unconfirmed
+    int count;
+    string paradigm;
+    if (rev=="rev"){
+	count=mRevCount;
+	paradigm=mConsensusRev;
+    }
+    else if (rev=="fwd"){
+	count=mCount-mRevCount;
+	paradigm=mConsensusFwd;
+    }
+    else{
+	cout<<"super!"<<endl;
+	count=min(mCount-mRevCount, mRevCount);
+	paradigm=mConsensusFwd;
+    }
+    if (count>0){
+	if (paradigm.length()!=currentSequence.length()){//if there's an indel, ignore it and trash
 		makeTrash();
-	    	return;
-	    }	
-            for (int i=0; i<currentSequence.length(); ++i){//go through existing substitutions. if an item is there but isn't in the new list, mark it as uncertain
-	    	if (currentSequence[i]!=mConsensusRev[i]){
-	    	    mConsensusRev.replace(i, 1,"N");
-	    	}
-	    }
+		return;
 	}
-	else{
-	    mConsensusRev=currentSequence;
+	for (int i=0; i<currentSequence.length(); ++i){//go through existing substitutions. if an item is there but isn't in the new list, mark it as uncertain
+		if (currentSequence[i]!=paradigm[i]){
+			paradigm.replace(i,1,"N");
+		}
 	}
     }
     else{
-	if (mCount-mRevCount>0){
-	    if (mConsensusFwd.length()!=currentSequence.length()){//if there's an indel, ignore it and trash
-                makeTrash();
-                return;
-            }               
-	    for (int i=0; i<currentSequence.length(); ++i){//go through existing substitutions. if an item is there but isn't in the new list, mark it as uncertain
-                if (currentSequence[i]!=mConsensusFwd[i]){
-                    mConsensusFwd.replace(i, 1,"N");
-                }
-            }
-	}
-    	else {//if this is the first read, no check is necessary
-            mConsensusFwd=currentSequence;
-	}
+	paradigm=currentSequence;
     }
+
+    if (rev=="rev"){
+	mConsensusRev=paradigm;
+    }
+    else if (rev=="fwd"){
+	mConsensusFwd=paradigm;
+    }
+    else if (rev=="super"){
+	mSuperConsensus=paradigm;
+    }
+	
+	    
 }
 void LeafData::setVariants(vector<int> variants){
     mVariants=variants;

@@ -112,7 +112,7 @@ int count2=0;
     	file2.open(pipes[i+1], ifstream::in);
 	while (getline(file1,throwoutstring)){//read sequence. 4 lines is a read. 2nd line has sequence
             count++;
-	    if (count%1000==0){
+	    if (count%10000==0){
 		cout<<count<<endl;
 	    }
             file1>>sequence;
@@ -126,7 +126,7 @@ int count2=0;
 	    if (sequence.find("TGACT")==BARCODE_LENGTH){       
                 barcode=sequence.substr(0,BARCODE_LENGTH);
                 ROI=sequence.substr(BARCODE_LENGTH+4, sequence.length()-BARCODE_LENGTH-4);
-		trie->addBarcode(ROINumber, phase,barcode,ROI, target, true);                   
+		trie->addBarcode(ROINumber, phase,barcode,ROI, target, "rev");                   
 	     }
 	    
 	    getline(file1,throwoutstring);

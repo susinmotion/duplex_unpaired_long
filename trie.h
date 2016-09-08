@@ -11,7 +11,7 @@ class Trie {
 public:
     Trie(){ mRootPointer = new Node; }
     Node* pRootPointer();
-    void addBarcode(int ROINumber, int phase, string barcode, string sequence="", string target="", bool rev=false);
+    void addBarcode(int ROINumber, int phase, string barcode, string sequence="", string target="", string rev="fwd");
     void setThresholdROIPhaseGenesBarcodelenTargetlen(vector <int> threshold, int numberOfROIs, int numberOfPhases, vector <string> genes, int barcodeLength, vector <int> targetLength);
     vector< vector<set <Node*> > >importantNodes();
     void addImportantNode( Node* importantNodePointer, int ROINumber, int phase );
