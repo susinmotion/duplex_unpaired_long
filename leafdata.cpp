@@ -47,7 +47,6 @@ void LeafData::callConsensus(string currentSequence, string rev="fwd"){//check s
 	paradigm=mConsensusFwd;
     }
     else{
-	cout<<"super!"<<endl;
 	count=min(mCount-mRevCount, mRevCount);
 	paradigm=mConsensusFwd;
     }

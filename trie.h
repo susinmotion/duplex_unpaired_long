@@ -2,6 +2,7 @@
 #define TRIE_H
 #include <map>
 #include "node.h"
+#include "variant.h"
 #include <string>
 #include <set>
 #include <vector>
@@ -34,9 +35,12 @@ private:
     vector< vector <vector< int > > >mCounts;
     vector< vector <set <Node*> > >mImportantNodes;
     vector< vector <int> > mVariantsCount;
+    vector< vector <int> > mSuperVariantsCount;
     vector< vector <int> > mNodesChecked;
     vector< string> mGenes;
     vector< vector < vector <int> > >mVariants;
+    vector< vector < vector <int> > >mSuperVariants;
+    vector<vector<vector< int> > > mSuperShifts;
 };
 
 #endif

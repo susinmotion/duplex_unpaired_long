@@ -1,6 +1,7 @@
 #include "trie.h"
 #include "node.h"
 #include "variants.h"
+#include "variant.h"
 #include <iostream>
 #include <vector>
 #include <string>
@@ -106,9 +107,12 @@ void Trie::addImportantNode(Node* pImportantNode, int ROINumber, int phase){
 
 void Trie::populateVariants(int threshold){
     mVariantsCount= vector <vector<int> >(mNumberOfROIs, vector<int>(mNumberOfPhases,  0));
+    mSuperVariantsCount=vector <vector<int> >(mNumberOfROIs, vector<int>(mNumberOfPhases,  0));
     mNodesChecked= vector <vector<int> >(mNumberOfROIs, vector<int>(mNumberOfPhases,  0));
     mVariants=vector <vector <vector<int> > >(mNumberOfROIs, vector<vector< int> >(mNumberOfPhases, vector<int>(625, 0)));
-              
+    Variant* emptyVariant=new Variant();
+    mSuperVariants=vector <vector <vector<int> > >(mNumberOfROIs, vector<vector<int> >(mNumberOfPhases, vector<int>(2175, 0)));           
+    mSuperShifts=vector<vector <vector<int> > >(mNumberOfROIs, vector<vector <int> >(mNumberOfPhases, vector<int>(20,0)) );
     cout<<mNumberOfROIs<< " rois"<<endl;
     cout<<mNumberOfPhases<<" phases"<<endl;
     int totalImportantNodes=0;
@@ -118,11 +122,29 @@ void Trie::populateVariants(int threshold){
 	    cout<<currentImportantNodes.size()<<" important nodes"<<endl;
 	    for (set <Node*>::iterator it=currentImportantNodes.begin(); it!=currentImportantNodes.end(); ++it){
 		LeafData* currentData=(*it)->leafData().at(i).at(j);
+		
 		totalImportantNodes++;
+		if (totalImportantNodes%100==0){
+			cout<<totalImportantNodes<<endl;
+		}
 		if (currentData!=NULL){
 		    if(currentData->count()>=threshold&& currentData->revCount()>=threshold){
 			mNodesChecked[i][j]++;
 			if (!currentData->isTrash()){
+			    currentData->callConsensus(currentData->consensusRev(), "super");
+			    vector <Variant*> currentSuperVariants=bowtieCheckVariants(currentData->superConsensus(), "mus");
+			    if (currentSuperVariants.size()<10){
+				while (!currentSuperVariants.empty()){
+					Variant* currentSuperVariant=currentSuperVariants.back();
+					currentSuperVariants.pop_back();
+					if (currentSuperVariant->getTarg()=='C' && currentSuperVariant->getAct()=='T'){
+						cout<<"CT"<<endl;
+					}
+					mSuperVariants[i][j][currentSuperVariant->getHash()]++;
+					mSuperShifts[i][j][currentSuperVariant->getShiftHash()]++;
+					mSuperVariantsCount[i][j]++;
+				}
+			}		
 			    checkVariants(currentData);
 			    vector <int> currentVariants = currentData->variants();
 			    if (currentVariants.size()<10){
@@ -202,13 +224,25 @@ void Trie::printVariants(int threshold){
                 os2<<threshold;
                 string filename= mGenes[i]+"_"+os.str()+"_thresh"+os2.str()+".txt";
                 string matrixFilename = mGenes[i]+"_"+os.str()+"_thresh"+os2.str()+"_matrix.txt";
+                string superFilename=mGenes[i]+"_"+os.str()+"_thresh"+os2.str()+"_super.txt";
                 ofstream outfile;
                 ofstream matrixOutfile;
+		ofstream superOutfile;
                 outfile.open (filename.c_str());
                 matrixOutfile.open (matrixFilename.c_str());
-
+		superOutfile.open(superFilename.c_str());
                 outfile<<"ROI: "<<mGenes[i]<<endl<<"Phase: "<<j<<endl<<"Total nodes checked: "<< mNodesChecked[i][j]<<endl<<"Total variants found: "<<mVariantsCount[i][j]<<endl;
-                /*
+                superOutfile<<"ROI: "<<mGenes[i]<<endl<<"Phase: "<<j<<endl<<"Total nodes checked: "<< mNodesChecked[i][j]<<endl<<"Total variants found: "<<mSuperVariantsCount[i][j]<<endl;
+		for (int l=0; l<4; ++l){
+			for (int k=0; k<5; ++k){
+				cout<<(l*5+k)<<endl;
+				cout<<mSuperShifts[i][j][l*5+k]<<endl;
+				matrixOutfile<<left<<setw(15)<<setfill(' ')<<mSuperShifts[i][j][l*5+k]/float(mSuperVariantsCount[i][j]);
+			}
+			matrixOutfile<<endl;
+		}
+		matrixOutfile.close();
+				/*
 		map<int,int>::iterator it1;
                 for (int l=0; l<5; ++l){//go through each base
                     for (int k = 0; k<mTargetLength[i]; ++k){
@@ -228,6 +262,13 @@ void Trie::printVariants(int threshold){
                     }
 		}
                 outfile.close();
+		for (int k=0; k<mSuperVariants[i][j].size();++k){
+			if (mSuperVariants[i][j][k]!=0){
+				string nucleotides="ACGTN";
+				superOutfile<<k/20<<" "<<nucleotides[(k%20)/5]<<" -> "<<nucleotides.substr(k%5, 1)<<" "<<mSuperVariants[i][j][k]<<endl;
+			}
+		}
+		
             }
         }
     }  
