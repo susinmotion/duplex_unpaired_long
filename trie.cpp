@@ -124,12 +124,10 @@ void Trie::populateVariants(int threshold){
 		LeafData* currentData=(*it)->leafData().at(i).at(j);
 		totalImportantNodes++;
 		if (currentData!=NULL){
-		    if(currentData->count()>=threshold&& currentData->revCount()>=threshold){
-			//mNodesChecked[i][j]++;
+	              if(currentData->count()-currentData->revCount()>=threshold&& currentData->revCount()>=threshold){
+			mNodesChecked[i][j]++;
 			if (!currentData->isTrash()){
 			    checkVariants(currentData);
-			                        mNodesChecked[i][j]++;  
-			  cout<<currentData->consensusFwd().length()<<endl;
 			   for (int k=0; k<currentData->consensusFwd().length(); ++k){
 				if (currentData->consensusFwd()[k]=='A'){
 					mAs[i][j]++;

@@ -112,7 +112,7 @@ int count2=0;
     	file2.open(pipes[i+1], ifstream::in);
 	while (getline(file1,throwoutstring)){//read sequence. 4 lines is a read. 2nd line has sequence
             count++;
-	    if (count%1000==0){
+	    if (count%10000==0){
 		cout<<count<<endl;
 	    }
             file1>>sequence;
