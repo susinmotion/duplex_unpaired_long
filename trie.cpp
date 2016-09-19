@@ -128,7 +128,7 @@ void Trie::populateVariants(int threshold){
 			cout<<totalImportantNodes<<endl;
 		}
 		if (currentData!=NULL){
-		    if(currentData->count()>=threshold&& currentData->revCount()>=threshold){
+		    if(currentData->count()-currentData->revCount()>=threshold&& currentData->revCount()>=threshold){
 			mNodesChecked[i][j]++;
 			if (!currentData->isTrash()){
 			    currentData->callConsensus(currentData->consensusRev(), "super");
