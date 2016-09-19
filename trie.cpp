@@ -90,8 +90,12 @@ void Trie::setThresholdROIPhaseGenesBarcodelenTargetlen(vector <int> threshold, 
     mGenes = genes;
     mTargetLength= targetLength;
     set <Node*> empty_set;
-
-    mImportantNodes=vector <vector <set <Node*> > >(mNumberOfROIs, vector<set<Node* > >(mNumberOfPhases, empty_set));
+    mAs=vector<vector<int> > (mNumberOfROIs, vector <int>(mNumberOfPhases,0));
+    mGs=vector<vector<int> > (mNumberOfROIs, vector <int>(mNumberOfPhases,0));
+    mCs=vector<vector<int> > (mNumberOfROIs, vector <int>(mNumberOfPhases,0));
+    mTs=vector<vector<int> > (mNumberOfROIs, vector <int>(mNumberOfPhases,0));
+    mNs=vector<vector<int> > (mNumberOfROIs, vector <int>(mNumberOfPhases,0));
+     mImportantNodes=vector <vector <set <Node*> > >(mNumberOfROIs, vector<set<Node* > >(mNumberOfPhases, empty_set));
     mBarcodeLength=barcodeLength;
     mCounts=vector< vector <vector<int> > >(mNumberOfROIs, vector< vector <int> >(mNumberOfPhases,vector <int>(200,0)));
 }
@@ -121,9 +125,28 @@ void Trie::populateVariants(int threshold){
 		totalImportantNodes++;
 		if (currentData!=NULL){
 		    if(currentData->count()>=threshold&& currentData->revCount()>=threshold){
-			mNodesChecked[i][j]++;
+			//mNodesChecked[i][j]++;
 			if (!currentData->isTrash()){
 			    checkVariants(currentData);
+			                        mNodesChecked[i][j]++;  
+			  cout<<currentData->consensusFwd().length()<<endl;
+			   for (int k=0; k<currentData->consensusFwd().length(); ++k){
+				if (currentData->consensusFwd()[k]=='A'){
+					mAs[i][j]++;
+				}
+				else if (currentData->consensusFwd()[k]=='C'){
+					mCs[i][j]++;
+				}
+				else if (currentData->consensusFwd()[k]=='G'){
+					mGs[i][j]++;
+				}
+				else if (currentData->consensusFwd()[k]=='T'){
+					mTs[i][j]++;
+				}
+				else if (currentData->consensusFwd()[k]=='N'){
+					mNs[i][j]++;
+				}
+			    }
 			    vector <int> currentVariants = currentData->variants();
 			    if (currentVariants.size()<10){
 				while (!currentVariants.empty()){//************variants for each node consist of avector of ints, representing the hashes of each variant found trio*shift. of a 256 4*4*4*4 array made flat
@@ -205,10 +228,16 @@ void Trie::printVariants(int threshold){
                 ofstream outfile;
                 ofstream matrixOutfile;
                 outfile.open (filename.c_str());
-                matrixOutfile.open (matrixFilename.c_str());
+                //matrixOutfile.open (matrixFilename.c_str());
 
                 outfile<<"ROI: "<<mGenes[i]<<endl<<"Phase: "<<j<<endl<<"Total nodes checked: "<< mNodesChecked[i][j]<<endl<<"Total variants found: "<<mVariantsCount[i][j]<<endl;
-                /*
+                
+		outfile<<mAs[i][j]<<" As"<<endl;
+		outfile<<mCs[i][j]<<" Cs"<<endl;
+		outfile<<mGs[i][j]<<" Gs"<<endl;
+		outfile<<mTs[i][j]<<" Ts"<<endl;
+		outfile<<mNs[i][j]<<" Ns"<<endl;
+		/*
 		map<int,int>::iterator it1;
                 for (int l=0; l<5; ++l){//go through each base
                     for (int k = 0; k<mTargetLength[i]; ++k){
