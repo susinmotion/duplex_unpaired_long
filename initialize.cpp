@@ -87,10 +87,6 @@ Trie* readFileIntoTrie(string filename, int no_of_files, char* pipes[]){//set co
         }
 
     }
-    for (int i=0; i<numberOfROIs; ++i){
-        FORWARD_ALIGN_SEQ.push_back(reverseComplement(FORWARD_ALIGN_SEQ[i]));
-        REVERSE_ALIGN_SEQ.push_back(reverseComplement(REVERSE_ALIGN_SEQ[i]));
-    }
     Trie* trie = new Trie;
     trie->setThresholdROIPhaseGenesBarcodelenTargetlen( THRESHOLDS_OF_IMPORTANCE, numberOfROIs, numberOfPhases, GENES, BARCODE_LENGTH, TARGET_LENGTHS);
     
@@ -116,14 +112,14 @@ int count2=0;
 		cout<<count<<endl;
 	    }
             file1>>sequence;
-	    if (sequence.find("TGNCT")==BARCODE_LENGTH){
+	    if (sequence.find(FORWARD_ALIGN_SEQ[0])==BARCODE_LENGTH){
 		barcode=sequence.substr(0,BARCODE_LENGTH);
 		ROI=sequence.substr(BARCODE_LENGTH+4, sequence.length()-BARCODE_LENGTH-4);
 		trie->addBarcode(ROINumber, phase,barcode,ROI,target);
 		}
 	    getline(file2,throwoutstring);
 	    file2>>sequence;
-	    if (sequence.find("TGACT")==BARCODE_LENGTH){       
+	    if (sequence.find(REVERSE_ALIGN_SEQ[0])==BARCODE_LENGTH){       
                 barcode=sequence.substr(0,BARCODE_LENGTH);
                 ROI=sequence.substr(BARCODE_LENGTH+4, sequence.length()-BARCODE_LENGTH-4);
 		trie->addBarcode(ROINumber, phase,barcode,ROI, target, "rev");                   

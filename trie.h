@@ -31,6 +31,11 @@ private:
     int mNumberOfROIs;
     int mNumberOfPhases;
     int mBarcodeLength;
+    vector <vector <int> > mAs;
+    vector< vector <int> > mCs;
+    vector< vector <int> > mGs;
+    vector< vector <int> > mTs;
+    vector< vector <int> > mNs;
     vector< int > mTargetLength;
     vector< vector <vector< int > > >mCounts;
     vector< vector <set <Node*> > >mImportantNodes;
