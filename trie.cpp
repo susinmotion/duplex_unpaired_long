@@ -12,6 +12,7 @@
 #include <typeinfo>
 #include <iomanip>
 #include <set>
+#include <algorithm>
 using namespace std;
 
 Node* Trie::pRootPointer(){
@@ -91,11 +92,6 @@ void Trie::setThresholdROIPhaseGenesBarcodelenTargetlen(vector <int> threshold, 
     mGenes = genes;
     mTargetLength= targetLength;
     set <Node*> empty_set;
-    mAs=vector<vector<int> > (mNumberOfROIs, vector <int>(mNumberOfPhases,0));
-    mGs=vector<vector<int> > (mNumberOfROIs, vector <int>(mNumberOfPhases,0));
-    mCs=vector<vector<int> > (mNumberOfROIs, vector <int>(mNumberOfPhases,0));
-    mTs=vector<vector<int> > (mNumberOfROIs, vector <int>(mNumberOfPhases,0));
-    mNs=vector<vector<int> > (mNumberOfROIs, vector <int>(mNumberOfPhases,0));
      mImportantNodes=vector <vector <set <Node*> > >(mNumberOfROIs, vector<set<Node* > >(mNumberOfPhases, empty_set));
     mBarcodeLength=barcodeLength;
     mCounts=vector< vector <vector<int> > >(mNumberOfROIs, vector< vector <int> >(mNumberOfPhases,vector <int>(200,0)));
@@ -113,10 +109,11 @@ void Trie::populateVariants(int threshold){
     mVariantsCount= vector <vector<int> >(mNumberOfROIs, vector<int>(mNumberOfPhases,  0));
     mSuperVariantsCount=vector <vector<int> >(mNumberOfROIs, vector<int>(mNumberOfPhases,  0));
     mNodesChecked= vector <vector<int> >(mNumberOfROIs, vector<int>(mNumberOfPhases,  0));
-    mVariants=vector <vector <vector<int> > >(mNumberOfROIs, vector<vector< int> >(mNumberOfPhases, vector<int>(625, 0)));
+    mVariants=vector <vector <vector<int> > >(mNumberOfROIs, vector<vector< int> >(mNumberOfPhases, vector<int>(472500, 0)));
     Variant* emptyVariant=new Variant();
-    mSuperVariants=vector <vector <vector<int> > >(mNumberOfROIs, vector<vector<int> >(mNumberOfPhases, vector<int>(2175, 0)));           
+    mSuperVariants=vector <vector <vector<int> > >(mNumberOfROIs, vector<vector<int> >(mNumberOfPhases, vector<int>(427500, 0)));           
     mSuperShifts=vector<vector <vector<int> > >(mNumberOfROIs, vector<vector <int> >(mNumberOfPhases, vector<int>(20,0)) );
+    mShifts=vector<vector <vector<int> > >(mNumberOfROIs, vector<vector <int> >(mNumberOfPhases, vector<int>(20,0)) );
     cout<<mNumberOfROIs<< " rois"<<endl;
     cout<<mNumberOfPhases<<" phases"<<endl;
     int totalImportantNodes=0;
@@ -124,67 +121,96 @@ void Trie::populateVariants(int threshold){
 	for (int j=0; j<mNumberOfPhases; ++j){
 	    set <Node*> currentImportantNodes=mImportantNodes[i][j];
 	    cout<<currentImportantNodes.size()<<" important nodes"<<endl;
+            ofstream dupes;
+            dupes.open("dupes.txt");
 	    for (set <Node*>::iterator it=currentImportantNodes.begin(); it!=currentImportantNodes.end(); ++it){
 		LeafData* currentData=(*it)->leafData().at(i).at(j);
 		
 		totalImportantNodes++;
-		if (totalImportantNodes%100==0){
+		if ( (totalImportantNodes%10000)==0){
 			cout<<totalImportantNodes<<endl;
 		}
 		if (currentData!=NULL){
-	              if(currentData->count()-currentData->revCount()>=threshold&& currentData->revCount()>=threshold){
+	              if( (currentData->count()-currentData->revCount()>=threshold)&& (currentData->revCount()>=threshold) ){
 			mNodesChecked[i][j]++;
 			if (!currentData->isTrash()){
-			    currentData->callConsensus(currentData->consensusRev(), "super");
-			    vector <Variant*> currentSuperVariants=bowtieCheckVariants(currentData->superConsensus(), "mus");
-			    if (currentSuperVariants.size()<10){
-				while (!currentSuperVariants.empty()){
-					Variant* currentSuperVariant=currentSuperVariants.back();
-					currentSuperVariants.pop_back();
-					if (currentSuperVariant->getTarg()=='C' && currentSuperVariant->getAct()=='T'){
-						cout<<"CT"<<endl;
+			    vector <Variant*> currentFwdVariants=bowtieCheckVariants(currentData->consensusFwd(), "mus", currentData);
+			    vector <Variant*> currentRevVariants=bowtieCheckVariants(currentData->consensusRev(), "mus");
+			    if (currentFwdVariants.size()!=0 or currentRevVariants.size()!=0){
+				sort(currentFwdVariants.begin(), currentFwdVariants.end());
+				sort(currentRevVariants.begin(), currentRevVariants.end());
+				vector <Variant*> currentSuperVariants;
+				vector<int>hashes;
+				for (vector<Variant*>::iterator it=currentFwdVariants.begin(); it!=currentFwdVariants.end();++it){
+					vector<Variant*>::iterator it1=currentRevVariants.begin();
+					for (; it1!=currentRevVariants.end(); ++it1){
+						if ( (*it)->getPos()==(*it1)->getPos()){
+							if( (*it)->getHash()!=(*it1)->getHash()){
+								cout<<"dupe!"<<endl;
+								dupes<<(*it)->getPos()<<" "<<(*it)->getTarg()<<" -> "<<(*it)->getAct()<<" : "<<(*it1)->getPos()<<" "<<(*it1)->getTarg()<<" -> "<<(*it1)->getAct()<<endl;
+							}
+							else{   
+
+								mSuperVariants[i][j][(*it)->getHash()]++;
+		                                                mSuperShifts[i][j][(*it)->getShiftHash()]++;
+                		                                mSuperVariantsCount[i][j]++;
+							}
+							currentRevVariants.erase(it1);
+							break;
+						}
 					}
-					mSuperVariants[i][j][currentSuperVariant->getHash()]++;
-					mSuperShifts[i][j][currentSuperVariant->getShiftHash()]++;
-					mSuperVariantsCount[i][j]++;
+					if (it1==currentRevVariants.end()){
+						mVariants[i][j][(*it)->getHash()]++;
+						mShifts[i][j][(*it)->getShiftHash()]++;
+						mVariantsCount[i][j]++;
+					}
 				}
-			}		
-			    checkVariants(currentData);
-			   for (int k=0; k<currentData->consensusFwd().length(); ++k){
-				if (currentData->consensusFwd()[k]=='A'){
-					mAs[i][j]++;
+				for (vector<Variant*>::iterator it=currentRevVariants.begin(); it!=currentRevVariants.end(); ++it){
+					mVariants[i][j][(*it)->getHash()]++;
+                                        mShifts[i][j][(*it)->getShiftHash()]++;
+                                        mVariantsCount[i][j]++;
 				}
-				else if (currentData->consensusFwd()[k]=='C'){
-					mCs[i][j]++;
-				}
-				else if (currentData->consensusFwd()[k]=='G'){
-					mGs[i][j]++;
-				}
-				else if (currentData->consensusFwd()[k]=='T'){
-					mTs[i][j]++;
-				}
-				else if (currentData->consensusFwd()[k]=='N'){
-					mNs[i][j]++;
-				}
-			    }
-			    vector <int> currentVariants = currentData->variants();
-			    if (currentVariants.size()<10){
-			while (!currentVariants.empty()){//************variants for each node consist of avector of ints, representing the hashes of each variant found trio*shift. of a 256 4*4*4*4 array made flat
-				    int currentVariant = currentVariants.back();
-				    currentVariants.pop_back();
-				    mVariants[i][j][currentVariant]++;
-				    mVariantsCount[i][j]++;
+/*
+			    	set_intersection(currentFwdVariants.begin(), currentFwdVariants.end(), currentRevVariants.begin(), currentRevVariants.end(), back_inserter(currentSuperVariants));
+			    	vector <Variant*> currentStrandDifs;
+			    	set_symmetric_difference(currentFwdVariants.begin(), currentFwdVariants.end(), currentRevVariants.begin(), currentRevVariants.end(), back_inserter(currentStrandDifs));
+			    	if (currentSuperVariants.size()<10){
+					while (!currentSuperVariants.empty()){
+						Variant* currentSuperVariant=currentSuperVariants.back();
+						currentSuperVariants.pop_back();
+						mSuperVariants[i][j][currentSuperVariant->getHash()]++;
+						mSuperShifts[i][j][currentSuperVariant->getShiftHash()]++;
+						mSuperVariantsCount[i][j]++;
+					}
+				}		
+				    if (currentStrandDifs.size()<10){
+					ofstream dupes;
+					dupes.open("dupes.txt", ofstream::app);
+					for (int k=0; k<currentStrandDifs.size(); ++k){
+						Variant* currentDif=currentStrandDifs.at(k);
+						int l=k+1;	
+					if ( (l<currentStrandDifs.size()) && (currentDif->getPos()==currentStrandDifs.at(l)->getPos()) ){
+							cout<<"dupes!"<<endl;
+							k++;
+							dupes<<currentDif->getPos()<<" "<<currentDif->getTarg()<<" -> "<<currentDif->getAct()<< " : "<<currentStrandDifs.at(l)->getPos()<<" "<<currentStrandDifs.at(l)->getTarg()<<" -> "<<currentStrandDifs.at(l)->getAct()<<endl;
+						}
+						else{
+						mVariants[i][j][currentDif->getHash()]++;
+						mShifts[i][j][currentDif->getShiftHash()]++;
+				   		mVariantsCount[i][j]++;
+						}
+					}
+					dupes.close();
 
+			    	    }
 				}
-				
-			    }
-
-			}
-
-			else{cout<<"Trash"<<endl;}
+*/	
+				}
+			}	
+		else{cout<<"Trash"<<endl;}
 
 		    }
-		}
+		}dupes.close(); 
 	    } 
 	}
     }
@@ -211,18 +237,18 @@ void Trie::printTrieImportantOnly(Node* pCurrentNode, string barcode, int index)
     }
     else if( !pCurrentNode->leafData().empty() ){//if we reach a leaf, print the count and variants
         ofstream summaryFile;
-        summaryFile.open("/mnt/brick2/justin/SRR1613972_duplex/summaryIMPORTANT.txt", ios::app);
+        summaryFile.open("summaryIMPORTANT.txt", ios::app);
         for (int i=0; i<mNumberOfROIs; ++i){
             for (int j=0; j<mNumberOfPhases; ++j){
                 LeafData* currentData= pCurrentNode->leafData()[i][j];
                 if (currentData!=NULL && !currentData->isTrash() && mImportantNodes[i][j].find(pCurrentNode)!=mImportantNodes[i][j].end()){
                     summaryFile<<barcode<<" "<<mGenes[i]<<" phase "<<j<<endl;
                     summaryFile<<currentData->count()<<" reads"<<endl;
-		    checkVariants(currentData); //this gets called twice... once in populate. there's pyobably a better way to do this
                     if (!currentData->variants().empty()){
                         for (int q=0; q<currentData->variants().size(); ++q){
-                            summaryFile<<" "<<unhashVariants(currentData->variants()[q]).first<<" "<< unhashVariants(currentData->variants()[q]).second<<endl;
-                        }
+                            //summaryFile<<" "<<unhashVariants(currentData->variants()[q]).first<<" "<< unhashVariants(currentData->variants()[q]).second<<endl;
+                        	summaryFile<<" "<<currentData->variants()[q]<<endl;//this is counting on my overloading << and also making this a vector of variant pointers not a vector of ints
+			}
                     }
                 }
             }
@@ -238,41 +264,44 @@ void Trie::printVariants(int threshold){
     cout<<"printing trie "<<endl;
     for (int i=0; i<mNumberOfROIs; ++i){
         for (int j=0; j<mNumberOfPhases; ++j){
-            if (mVariantsCount[i][j]!=0){
+            if (mVariantsCount[i][j]!=0 || mSuperVariantsCount[i][j]!=0){
                 ostringstream os;
                 os<<j;
                 ostringstream os2;
                 os2<<threshold;
                 string filename= mGenes[i]+"_"+os.str()+"_thresh"+os2.str()+".txt";
                 string matrixFilename = mGenes[i]+"_"+os.str()+"_thresh"+os2.str()+"_matrix.txt";
+		string supermatrixFilename=mGenes[i]+"_"+os.str()+"_thresh"+os2.str()+"_supermatrix.txt";
                 string superFilename=mGenes[i]+"_"+os.str()+"_thresh"+os2.str()+"_super.txt";
                 ofstream outfile;
                 ofstream matrixOutfile;
 		ofstream superOutfile;
-                outfile.open (filename.c_str());
+                ofstream supermatrixOutfile;
+		outfile.open (filename.c_str());
                 matrixOutfile.open (matrixFilename.c_str());
+		supermatrixOutfile.open (supermatrixFilename.c_str());
 		superOutfile.open(superFilename.c_str());
                 outfile<<"ROI: "<<mGenes[i]<<endl<<"Phase: "<<j<<endl<<"Total nodes checked: "<< mNodesChecked[i][j]<<endl<<"Total variants found: "<<mVariantsCount[i][j]<<endl;
                 superOutfile<<"ROI: "<<mGenes[i]<<endl<<"Phase: "<<j<<endl<<"Total nodes checked: "<< mNodesChecked[i][j]<<endl<<"Total variants found: "<<mSuperVariantsCount[i][j]<<endl;
 
-                outfile<<"ROI: "<<mGenes[i]<<endl<<"Phase: "<<j<<endl<<"Total nodes checked: "<< mNodesChecked[i][j]<<endl<<"Total variants found: "<<mVariantsCount[i][j]<<endl;
-                
-		outfile<<mAs[i][j]<<" As"<<endl;
-		outfile<<mCs[i][j]<<" Cs"<<endl;
-		outfile<<mGs[i][j]<<" Gs"<<endl;
-		outfile<<mTs[i][j]<<" Ts"<<endl;
-		outfile<<mNs[i][j]<<" Ns"<<endl;
 		map<int,int>::iterator it1;
 		
 		for (int l=0; l<4; ++l){
                         for (int k=0; k<5; ++k){
-                                cout<<(l*5+k)<<endl;
-                                cout<<mSuperShifts[i][j][l*5+k]<<endl;
-                                matrixOutfile<<left<<setw(15)<<setfill(' ')<<mSuperShifts[i][j][l*5+k]/float(mSuperVariantsCount[i][j]);
+				supermatrixOutfile<<left<<setw(15)<<setfill(' ')<<mSuperShifts[i][j][l*5+k]/float(mSuperVariantsCount[i][j]);
+                                matrixOutfile<<left<<setw(15)<<setfill(' ')<<mShifts[i][j][l*5+k]/float(mVariantsCount[i][j]);
                         }
-                        matrixOutfile<<endl;
+                       supermatrixOutfile<<endl;
+			 matrixOutfile<<endl;
+                }
+               for (int l=0; l<4; ++l){
+                        for (int k=0; k<5; ++k){
+                                supermatrixOutfile<<"ACGTN"[l]<<" -> "<<"ACGTN"[k]<<" "<<mSuperShifts[i][j][l*5+k]<<endl;
+                        	matrixOutfile<<"ACGTN"[l]<<" -> "<<"ACGTN"[k]<<" "<<mShifts[i][j][l*5+k]<<endl;
+			}
                 }
                 matrixOutfile.close();
+		supermatrixOutfile.close();
 
 		/*
                 for (int l=0; l<5; ++l){//go through each base
@@ -289,8 +318,9 @@ void Trie::printVariants(int threshold){
                 }*/
 		for (int k=0; k<mVariants[i][j].size(); ++k){
 		    if (mVariants[i][j][k]!=0){
-           	         outfile<<unhashVariants(k).first<<" -> "<<unhashVariants(k).second<<" "<<mVariants[i][j][k]<<endl;
-                    }
+               			string nucleotides="ACGTN";
+                                outfile<<k/20<<" "<<nucleotides[(k%20)/5]<<" -> "<<nucleotides.substr(k%5, 1)<<" "<<mVariants[i][j][k]<<endl;    
+		    }
 		}
                 outfile.close();
 		for (int k=0; k<mSuperVariants[i][j].size();++k){
@@ -363,8 +393,9 @@ void Trie::printTrie(Node* pCurrentNode, string barcode, int index){
 
                     if (!currentData->variants().empty()){
                         for (int q=0; q<currentData->variants().size(); ++q){
-                            summaryFile<<" "<<unhashVariants(currentData->variants()[q]).first<<" "<< unhashVariants(currentData->variants()[q]).second<<endl;
-                        }
+                        //summaryFile<<" "<<unhashVariants(currentData->variants()[q]).first<<" "<< unhashVariants(currentData->variants()[q]).second<<endl;
+                                summaryFile<<" "<<currentData->variants()[q]<<endl;//this is counting on my overloading << and also making this a vector of variant pointers not a vector of ints
+			}
                     }
                 
                 }

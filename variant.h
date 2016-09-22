@@ -27,5 +27,6 @@ class Variant {
 	char getTarg()  const {return targ;}
 	char getAct() const {return act;}
 	string getTrio() const {return trio;}
+
 };
 #endif

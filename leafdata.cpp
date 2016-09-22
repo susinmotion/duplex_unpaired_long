@@ -2,6 +2,7 @@
 #include <stack>
 #include <algorithm>
 #include "leafdata.h"
+#include "variant.h"
 #include <iostream>
 using namespace std;
 
@@ -26,12 +27,12 @@ string LeafData::consensusFwd(){
 string LeafData::consensusRev(){
     return mConsensusRev;
 }
-string LeafData::superConsensus(){
-    return mSuperConsensus;
-}
 
-vector <int> LeafData::variants(){
+vector <Variant*> LeafData::variants(){
     return mVariants;
+}
+vector <Variant*> LeafData::superVariants(){
+   return mSuperVariants;
 }
 
 //this is still a little icky...
@@ -71,16 +72,15 @@ void LeafData::callConsensus(string currentSequence, string rev="fwd"){//check s
     else if (rev=="fwd"){
 	mConsensusFwd=paradigm;
     }
-    else if (rev=="super"){
-	mSuperConsensus=paradigm;
-    }
 	
 	    
 }
-void LeafData::setVariants(vector<int> variants){
+void LeafData::setVariants(vector<Variant*> variants){
     mVariants=variants;
 }
-
+void LeafData::setSuperVariants(vector<Variant*> variants){
+    mSuperVariants=variants;
+}
 bool LeafData::isTrash(){
     return mIsTrash;
 }
@@ -88,4 +88,9 @@ bool LeafData::isTrash(){
 void LeafData::makeTrash(){
     mIsTrash=true;
 }
-
+int LeafData::geneLoc(){
+    return mGeneLoc;
+}
+void LeafData::setGeneLoc(int loc){
+    mGeneLoc=loc;
+}
