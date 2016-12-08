@@ -54,7 +54,7 @@ vector<Variant*> bowtieCheckVariants(string sequence, string gene){
             if (fgets(buffer,128,pipe)!=NULL)
                 result += buffer;
         }
-    }
+	}
     catch(...){
         pclose(pipe);
         throw;
@@ -69,36 +69,39 @@ vector<Variant*> bowtieCheckVariants(string sequence, string gene){
     char act;
     string strand;
     int alignpos;
+    bool still_going=true;
     if (result != "\n"&&result!=""){
+        cout<<result<<endl;
         istringstream iss(result);
         iss>>strand>>alignpos;
         string rest;
         iss>>rest;
         if (rest!=""){
-                while ( 1 ){
-                    subpos=rest.substr(0,rest.find(":"));
-                    istringstream(subpos)>>spos;
-                    targ=rest[rest.find(">")-1];
-                    act=rest[rest.find(">")+1];
-                    if( strand=="+"){
-                        spos=alignpos+spos;
+            cout<<rest<<endl;
+        while ( still_going){
+            pos=result.find(",");
+               if (pos ==string::npos){
+                            still_going=false;
+                            pos=result.length();
                     }
-                    else {
-                        spos=alignpos+sequence.length()-spos-1;
-                    }
-                    Variant* v= new Variant(spos,act,targ);
-                    variants.push_back(v);
-                    pos=rest.find(",");
-                    if (pos==string::npos){
-                        break;
-                    }
-                    else {
-                        rest.erase(0, pos+1);
-                    }
+                variant=result.substr(0,pos);
 
+                subpos=variant.substr(0,variant.find(":"));
+                istringstream(subpos)>>spos;
+                targ=variant[variant.find(">")-1];
+                act=variant[variant.find(">")+1];
+                if (strand=="+"){
+                    spos=alignpos+spos;
                 }
-        }
-    }
-	return variants;
-}
+                else if (strand=="-"){
+                    spos=alignpos+sequence.length()-spos-1;
+                }
+                Variant* v= new Variant(spos,act,targ);
+                variants.push_back(v);
+                result.erase(0, pos+ 1);
 
+            }
+    }
+}
+return variants;
+}
