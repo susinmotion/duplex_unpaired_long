@@ -115,7 +115,7 @@ void Trie::populateVariants(int threshold){
     mNodesChecked= vector <vector<int> >(mNumberOfROIs, vector<int>(mNumberOfPhases,  0));
     mVariants=vector <vector <vector<int> > >(mNumberOfROIs, vector<vector< int> >(mNumberOfPhases, vector<int>(625, 0)));
     Variant* emptyVariant=new Variant();
-    mSuperVariants=vector <vector <vector<int> > >(mNumberOfROIs, vector<vector<int> >(mNumberOfPhases, vector<int>(2175, 0)));           
+    mSuperVariants=vector <vector <vector<int> > >(mNumberOfROIs, vector<vector<int> >(mNumberOfPhases, vector<int>(2175000, 0)));           
     mSuperShifts=vector<vector <vector<int> > >(mNumberOfROIs, vector<vector <int> >(mNumberOfPhases, vector<int>(20,0)) );
     cout<<mNumberOfROIs<< " rois"<<endl;
     cout<<mNumberOfPhases<<" phases"<<endl;
